@@ -76,7 +76,7 @@ class LoginScreen(tk.Tk):
                                    fg=COLORS['text_secondary'])
         subtitle_label.pack()
 
-        # Login form frame
+        # Login form frame - single column container
         form_frame = tk.Frame(main_frame, bg=COLORS['background'])
         form_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -139,8 +139,6 @@ class LoginScreen(tk.Tk):
         # Add hover effect
         self.login_button.bind('<Enter>', lambda e: self.login_button.config(bg=COLORS['primary_hover']))
         self.login_button.bind('<Leave>', lambda e: self.login_button.config(bg=COLORS['primary']))
-
-
 
         # Bind Enter key to login
         self.bind('<Return>', lambda e: self.handle_login())

@@ -1,0 +1,19 @@
+{
+  "claude": {
+    "enabled": true,
+    "serverConfigs": [
+      {
+        "name": "Tkinter App MCP",
+        "command": "python3",
+        "args": [
+          "D:\tkinter_mysql_project\tkinter_mysql_project/tkinter_mcp_server.py"
+        ],
+        "env": {
+          "PYTHONPATH": "D:\tkinter_mysql_project\tkinter_mysql_project"
+        },
+        "disabled": false,
+        "alwaysAllow": true
+      }
+    ]
+  }
+}

@@ -58,90 +58,90 @@ class CompanyForm(tk.Frame):
         self.create_form_content(form_container)
 
     def create_form_content(self, parent):
-        """Create form fields"""
-        # Form frame with padding (better spacing)
+        """Create form fields - all stacked vertically in single column"""
+        # Form frame with padding
         form_frame = tk.Frame(parent, bg=self.colors['background'])
         form_frame.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxl'], pady=SPACING['xl'])
 
-        # Two column layout - Configure grid for equal width columns
-        form_frame.grid_columnconfigure(0, weight=1, uniform="column")
-        form_frame.grid_columnconfigure(1, weight=1, uniform="column")
+        # Single column layout - all fields stacked vertically
+        form_frame.grid_columnconfigure(0, weight=1)
 
-        # Left column (50% width)
-        left_column = tk.Frame(form_frame, bg=self.colors['background'])
-        left_column.grid(row=0, column=0, sticky="nsew", padx=(0, SPACING['md']))
+        current_row = 0
 
-        # Right column (50% width)
-        right_column = tk.Frame(form_frame, bg=self.colors['background'])
-        right_column.grid(row=0, column=1, sticky="nsew", padx=(SPACING['md'], 0))
+        # --- Company Code ---
+        self.create_field(form_frame, "Company Code", "company_code",
+                         placeholder="e.g., COMP-001", required=True, row=current_row)
+        current_row += 2
 
-        # --- ROW 1: Company Code | Company Name ---
-        # Company Code
-        self.create_field(left_column, "Company Code", "company_code",
-                         placeholder="e.g., COMP-001", required=True)
+        # --- Company Name ---
+        self.create_field(form_frame, "Company Name", "company_name",
+                         placeholder="Enter company name", required=True, row=current_row)
+        current_row += 2
 
-        # Company Name
-        self.create_field(right_column, "Company Name", "company_name",
-                         placeholder="Enter company name", required=True)
+        # --- GST Number ---
+        self.create_field(form_frame, "GST Number", "gst_number",
+                         placeholder="Enter GST number", row=current_row)
+        current_row += 2
 
-        # --- ROW 2: GST Number | PAN Number ---
-        # GST Number
-        self.create_field(left_column, "GST Number", "gst_number",
-                         placeholder="Enter GST number")
+        # --- PAN Number ---
+        self.create_field(form_frame, "PAN Number", "pan_number",
+                         placeholder="Enter PAN number", row=current_row)
+        current_row += 2
 
-        # PAN Number
-        self.create_field(right_column, "PAN Number", "pan_number",
-                         placeholder="Enter PAN number")
+        # --- Bill To Address ---
+        self.create_textarea(form_frame, "Bill To Address", "bill_to_address",
+                            placeholder="Enter billing address", row=current_row)
+        current_row += 2
 
-        # --- ROW 3: Bill To Address | Ship To Address ---
-        # Bill To Address
-        self.create_textarea(left_column, "Bill To Address", "bill_to_address",
-                            placeholder="Enter billing address")
+        # --- Ship To Address ---
+        self.create_textarea(form_frame, "Ship To Address", "ship_to_address",
+                            placeholder="Enter shipping address", row=current_row)
+        current_row += 2
 
-        # Ship To Address
-        self.create_textarea(right_column, "Ship To Address", "ship_to_address",
-                            placeholder="Enter shipping address")
+        # --- State ---
+        self.create_dropdown(form_frame, "State", "state",
+                            self.company_handler.get_states(), row=current_row)
+        current_row += 2
 
-        # --- ROW 4: State | City ---
-        # State
-        self.create_dropdown(left_column, "State", "state",
-                            self.company_handler.get_states())
+        # --- City ---
+        self.create_field(form_frame, "City", "city",
+                         placeholder="Enter city", row=current_row)
+        current_row += 2
 
-        # City (now text input)
-        self.create_field(right_column, "City", "city",
-                         placeholder="Enter city")
+        # --- Landline Number ---
+        self.create_field(form_frame, "Landline Number", "landline_number",
+                         placeholder="Enter landline number", row=current_row)
+        current_row += 2
 
-        # --- ROW 5: Landline Number | Mobile Number ---
-        # Landline Number
-        self.create_field(left_column, "Landline Number", "landline_number",
-                         placeholder="Enter landline number")
+        # --- Mobile Number ---
+        self.create_field(form_frame, "Mobile Number", "mobile_number",
+                         placeholder="Enter mobile number", row=current_row)
+        current_row += 2
 
-        # Mobile Number
-        self.create_field(right_column, "Mobile Number", "mobile_number",
-                         placeholder="Enter mobile number")
+        # --- Email Address ---
+        self.create_field(form_frame, "Email Address", "email_address",
+                         placeholder="Enter email address", row=current_row)
+        current_row += 2
 
-        # --- ROW 6: Email Address | Website ---
-        # Email Address
-        self.create_field(left_column, "Email Address", "email_address",
-                         placeholder="Enter email address")
+        # --- Website ---
+        self.create_field(form_frame, "Website", "website",
+                         placeholder="Enter website URL", row=current_row)
+        current_row += 2
 
-        # Website
-        self.create_field(right_column, "Website", "website",
-                         placeholder="Enter website URL")
+        # --- Logo Upload ---
+        self.create_file_upload(form_frame, "Attach Logo", "logo_path", row=current_row)
+        current_row += 2
 
-        # --- ROW 7: Attach Logo | Status ---
-        # Logo upload
-        self.create_file_upload(left_column, "Attach Logo", "logo_path")
-
-        # Status
-        self.create_dropdown(right_column, "Status", "status",
-                            ["Active", "Inactive"])
+        # --- Status ---
+        self.create_dropdown(form_frame, "Status", "status",
+                            ["Active", "Inactive"], row=current_row)
+        current_row += 2
 
         # --- BUTTONS ---
         button_frame = tk.Frame(parent, bg=self.colors['background'])
         button_frame.pack(fill=tk.X, padx=SPACING['xxl'], pady=(SPACING['lg'], SPACING['xl']))
 
-        # Save button (better styling)
+        # Save button
         save_btn = tk.Button(button_frame,
                             text="Save")
         save_btn.config(
@@ -162,7 +162,7 @@ class CompanyForm(tk.Frame):
         save_btn.bind('<Enter>', lambda e: save_btn.config(bg=self.colors['primary_hover']))
         save_btn.bind('<Leave>', lambda e: save_btn.config(bg=self.colors['primary']))
 
-        # Cancel button (better contrast)
+        # Cancel button
         cancel_btn = tk.Button(button_frame,
                               text="Cancel")
         cancel_btn.config(
@@ -189,23 +189,20 @@ class CompanyForm(tk.Frame):
         back_link.pack(side=tk.RIGHT)
         back_link.bind('<Button-1>', lambda e: self.handle_cancel())
 
-    def create_field(self, parent, label_text, field_name, placeholder="", required=False):
-        """Create a text input field"""
-        field_frame = tk.Frame(parent, bg=self.colors['background'])
-        field_frame.pack(fill=tk.X, pady=(0, SPACING['lg']))
-
-        # Label (larger, better visibility)
-        label = tk.Label(field_frame,
+    def create_field(self, parent, label_text, field_name, placeholder="", required=False, row=0):
+        """Create a text input field - stacked vertically"""
+        # Label
+        label = tk.Label(parent,
                         text=label_text + (" *" if required else ""),
                         font=FONTS['body_bold'],
                         bg=self.colors['background'],
                         fg=self.colors['text_primary'],
                         anchor='w')
-        label.pack(fill=tk.X, pady=(0, SPACING['sm']))
+        label.grid(row=row, column=0, sticky=tk.W, pady=(0, SPACING['sm']))
 
-        # Entry (larger text, better padding)
-        entry = ttk.Entry(field_frame, font=FONTS['body'])
-        entry.pack(fill=tk.X, ipady=SPACING['md'])
+        # Entry (with equal width)
+        entry = ttk.Entry(parent, font=FONTS['body'])
+        entry.grid(row=row+1, column=0, sticky=tk.EW, ipady=SPACING['md'], pady=(0, SPACING['lg']))
 
         # Placeholder
         if placeholder:
@@ -232,22 +229,19 @@ class CompanyForm(tk.Frame):
             'required': required
         }
 
-    def create_textarea(self, parent, label_text, field_name, placeholder=""):
-        """Create a multiline text area"""
-        field_frame = tk.Frame(parent, bg=self.colors['background'])
-        field_frame.pack(fill=tk.X, pady=(0, SPACING['lg']))
-
-        # Label (better visibility)
-        label = tk.Label(field_frame,
+    def create_textarea(self, parent, label_text, field_name, placeholder="", row=0):
+        """Create a multiline text area - stacked vertically"""
+        # Label
+        label = tk.Label(parent,
                         text=label_text,
                         font=FONTS['body_bold'],
                         bg=self.colors['background'],
                         fg=self.colors['text_primary'],
                         anchor='w')
-        label.pack(fill=tk.X, pady=(0, SPACING['sm']))
+        label.grid(row=row, column=0, sticky=tk.W, pady=(0, SPACING['sm']))
 
-        # Text widget (better border and padding)
-        text_widget = tk.Text(field_frame,
+        # Text widget (with equal width)
+        text_widget = tk.Text(parent,
                              font=FONTS['body'],
                              height=4,
                              wrap=tk.WORD,
@@ -255,7 +249,7 @@ class CompanyForm(tk.Frame):
                              borderwidth=2,
                              padx=SPACING['sm'],
                              pady=SPACING['sm'])
-        text_widget.pack(fill=tk.X)
+        text_widget.grid(row=row+1, column=0, sticky=tk.EW, pady=(0, SPACING['lg']))
 
         # Placeholder
         if placeholder:
@@ -281,26 +275,23 @@ class CompanyForm(tk.Frame):
             'type': 'text'
         }
 
-    def create_dropdown(self, parent, label_text, field_name, values):
-        """Create a dropdown field"""
-        field_frame = tk.Frame(parent, bg=self.colors['background'])
-        field_frame.pack(fill=tk.X, pady=(0, SPACING['lg']))
-
-        # Label (better visibility)
-        label = tk.Label(field_frame,
+    def create_dropdown(self, parent, label_text, field_name, values, row=0):
+        """Create a dropdown field - stacked vertically"""
+        # Label
+        label = tk.Label(parent,
                         text=label_text,
                         font=FONTS['body_bold'],
                         bg=self.colors['background'],
                         fg=self.colors['text_primary'],
                         anchor='w')
-        label.pack(fill=tk.X, pady=(0, SPACING['sm']))
+        label.grid(row=row, column=0, sticky=tk.W, pady=(0, SPACING['sm']))
 
-        # Combobox (better padding)
-        combo = ttk.Combobox(field_frame,
+        # Combobox (with equal width)
+        combo = ttk.Combobox(parent,
                             font=FONTS['body'],
                             state="readonly" if values else "normal",
                             values=values)
-        combo.pack(fill=tk.X, ipady=SPACING['md'])
+        combo.grid(row=row+1, column=0, sticky=tk.EW, ipady=SPACING['md'], pady=(0, SPACING['lg']))
 
         if values:
             if field_name == 'status':
@@ -314,23 +305,21 @@ class CompanyForm(tk.Frame):
             'type': 'combobox'
         }
 
-    def create_file_upload(self, parent, label_text, field_name):
-        """Create a file upload field"""
-        field_frame = tk.Frame(parent, bg=self.colors['background'])
-        field_frame.pack(fill=tk.X, pady=(0, SPACING['lg']))
-
-        # Label (better visibility)
-        label = tk.Label(field_frame,
+    def create_file_upload(self, parent, label_text, field_name, row=0):
+        """Create a file upload field - stacked vertically"""
+        # Label
+        label = tk.Label(parent,
                         text=label_text,
                         font=FONTS['body_bold'],
                         bg=self.colors['background'],
                         fg=self.colors['text_primary'],
                         anchor='w')
-        label.pack(fill=tk.X, pady=(0, SPACING['sm']))
+        label.grid(row=row, column=0, sticky=tk.W, pady=(0, SPACING['sm']))
 
-        # Button and path display (better border)
-        upload_frame = tk.Frame(field_frame, bg=self.colors['background'], relief=tk.SOLID, borderwidth=2)
-        upload_frame.pack(fill=tk.X, ipady=SPACING['md'])
+        # Upload frame (with equal width)
+        upload_frame = tk.Frame(parent, bg=self.colors['background'], relief=tk.SOLID, borderwidth=2)
+        upload_frame.grid(row=row+1, column=0, sticky=tk.EW, ipady=SPACING['md'], pady=(0, SPACING['lg']))
+        upload_frame.grid_columnconfigure(0, weight=1)
 
         # File path label
         path_var = tk.StringVar(value="No file selected")
@@ -341,9 +330,9 @@ class CompanyForm(tk.Frame):
                              fg=self.colors['text_tertiary'],
                              anchor='w',
                              padx=SPACING['md'])
-        path_label.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        path_label.grid(row=0, column=0, sticky=tk.EW)
 
-        # Browse button (better contrast)
+        # Browse button
         def browse_file():
             filename = filedialog.askopenfilename(
                 title="Select Logo",
@@ -367,7 +356,7 @@ class CompanyForm(tk.Frame):
             pady=SPACING['sm'],
             command=browse_file
         )
-        browse_btn.pack(side=tk.RIGHT, padx=SPACING['sm'])
+        browse_btn.grid(row=0, column=1, padx=SPACING['sm'])
 
         # Store reference
         self.form_vars[field_name] = {
@@ -375,7 +364,6 @@ class CompanyForm(tk.Frame):
             'type': 'file',
             'path_label': path_label
         }
-
 
     def load_company_data(self):
         """Load existing company data into form"""

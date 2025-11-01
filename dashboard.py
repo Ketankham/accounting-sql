@@ -159,7 +159,8 @@ class Dashboard(tk.Tk):
                 'name': 'Utilities',
                 'icon': '⚙️',
                 'submenus': [
-                    'Companies'
+                    'Companies',
+                    'Financial Years'
                 ]
             }
         ]
@@ -306,11 +307,13 @@ class Dashboard(tk.Tk):
         """Show content for a selected submenu"""
         # Clear content
         for widget in self.content_frame.winfo_children():
-            widget.destroy()
+           widget.destroy()
 
-        # Handle specific submenus
+    # Handle specific submenus
         if module_name == 'Utilities' and submenu_name == 'Companies':
             self.show_companies_management()
+        elif module_name == 'Utilities' and submenu_name == 'Financial Years':
+            self.show_financial_years_management()
         else:
             # Default placeholder
             center_frame = tk.Frame(self.content_frame, bg=self.colors['background'])
@@ -338,6 +341,22 @@ class Dashboard(tk.Tk):
 
         except Exception as e:
             messagebox.showerror("Error", f"Could not load Companies module: {e}")
+
+    def show_financial_years_management(self):
+        """Show financial years management screen"""
+        try:
+            from financial_year_management import FinancialYearManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create financial year management widget
+            fy_mgmt = FinancialYearManagement(self.content_frame, self.colors)
+            fy_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load Financial Years module: {e}")
 
     def create_footer(self):
         """Create footer"""
@@ -369,6 +388,28 @@ class Dashboard(tk.Tk):
                 login.mainloop()
             except Exception as e:
                 print(f"Error reopening login: {e}")
+    def load_generated_module(self, module_path):
+        """Dynamically load a generated module"""
+        try:
+            # module_path should be like 'tables.ProductsTable'
+            parts = module_path.rsplit('.', 1)
+            module_name = parts[0]
+            class_name = parts[1]
+            
+            # Import module
+            module = __import__(module_name, fromlist=[class_name])
+            widget_class = getattr(module, class_name)
+            
+            # Create instance
+            from database.company_handler import CompanyHandler
+            handler = CompanyHandler()  # Or use the appropriate handler
+            
+            widget = widget_class(self.content_frame, handler)
+            widget.pack(fill=tk.BOTH, expand=True)
+            return True
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load module: {e}")
+            return False    
 
 
 if __name__ == "__main__":
