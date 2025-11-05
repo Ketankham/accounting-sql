@@ -32,12 +32,43 @@ class FinancialYearForm(tk.Frame):
 
     def create_widgets(self):
         """Create the form UI"""
-        # Main container
+        # Main container with canvas for scrolling
         main_container = tk.Frame(self, bg=self.colors['background'])
         main_container.pack(fill=tk.BOTH, expand=True)
 
-        # Form content
-        form_container = tk.Frame(main_container, bg=self.colors['background'])
+        # Create canvas and scrollbar for scrollable form
+        canvas = tk.Canvas(main_container, bg=self.colors['background'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(main_container, orient="vertical", command=canvas.yview)
+
+        # Scrollable frame inside canvas
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['background'])
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        # Create canvas window with width binding (same fix as table view)
+        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Bind canvas width to scrollable_frame width
+        def on_canvas_configure(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        canvas.bind("<Configure>", on_canvas_configure)
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Mousewheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
+        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+
+        # Form content inside scrollable frame
+        form_container = tk.Frame(scrollable_frame, bg=self.colors['background'])
         form_container.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxl'], pady=SPACING['xl'])
 
         # Single column layout
@@ -72,8 +103,8 @@ class FinancialYearForm(tk.Frame):
                             ["Active", "Inactive"], row=current_row)
         current_row += 2
 
-        # --- BUTTONS ---
-        button_frame = tk.Frame(main_container, bg=self.colors['background'])
+        # --- BUTTONS (inside scrollable area) ---
+        button_frame = tk.Frame(scrollable_frame, bg=self.colors['background'])
         button_frame.pack(fill=tk.X, padx=SPACING['xxl'], pady=(SPACING['lg'], SPACING['xl']))
 
         # Save button (left side)
@@ -251,14 +282,17 @@ class FinancialYearForm(tk.Frame):
                     if isinstance(date_value, str):
                         date_value = datetime.strptime(date_value, '%Y-%m-%d').date()
                     field_info['widget'].set_date(date_value)
+
             elif 'var' in field_info:
                 # Text/dropdown field
                 value = self.fy_data.get(field_name, '')
                 if value and value != field_info.get('placeholder', ''):
                     field_info['var'].set(value)
+
                     if 'widget' in field_info:
                         widget = field_info['widget']
-                        if isinstance(widget, tk.Entry):
+                        # Only set fg color for tk.Entry, NOT for ttk.Combobox
+                        if isinstance(widget, tk.Entry) and not isinstance(widget, ttk.Combobox):
                             widget.config(fg=self.colors['text_primary'])
 
     def validate_form(self):

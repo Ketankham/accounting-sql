@@ -87,11 +87,11 @@ class CompanyManagement(tk.Frame):
         header_frame.pack_propagate(False)
 
         headers = [
-            ("Sr.", 60),
-            ("Company Code", 180),
-            ("Company Name", 300),
-            ("Status", 140),
-            ("Action", 180)
+            ("Sr.", 4),
+            ("Company Name", 30),
+            ("Company Code", 12),
+            ("Status", 8),
+            ("Action", 6)
         ]
 
         for header_text, width in headers:
@@ -119,7 +119,13 @@ class CompanyManagement(tk.Frame):
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=self.table_body, anchor="nw")
+        # CRITICAL FIX: Create window with proper width binding to prevent 1px wide frame
+        self.canvas_window = canvas.create_window((0, 0), window=self.table_body, anchor="nw")
+
+        # Bind canvas width to table_body width so it expands horizontally
+        def on_canvas_configure(event):
+            canvas.itemconfig(self.canvas_window, width=event.width)
+        canvas.bind("<Configure>", on_canvas_configure)
         canvas.configure(yscrollcommand=scrollbar.set)
 
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -157,73 +163,103 @@ class CompanyManagement(tk.Frame):
 
     def create_table_row(self, sr_no, company):
         """Create a single table row"""
-        row_frame = tk.Frame(self.table_body, bg=self.colors['background'], height=LAYOUT['table_row_height'])
-        row_frame.pack(fill=tk.X, pady=SPACING['xs'])
+        # Alternating row colors
+        row_bg = self.colors['background'] if sr_no % 2 == 0 else self.colors['surface']
+
+        row_frame = tk.Frame(self.table_body, bg=row_bg, height=LAYOUT['table_row_height'])
+        row_frame.pack(fill=tk.X, pady=1)
         row_frame.pack_propagate(False)
 
-        # Bottom border (more visible)
-        border = tk.Frame(row_frame, bg=self.colors['border_light'], height=1)
-        border.pack(side=tk.BOTTOM, fill=tk.X)
+        # Hover effect
+        def on_enter(e):
+            row_frame.config(bg='#DBEAFE')
+            for widget in row_frame.winfo_children():
+                if isinstance(widget, (tk.Label, tk.Frame)) and widget != edit_btn:
+                    widget.config(bg='#DBEAFE')
 
-        # Serial number
+        def on_leave(e):
+            row_frame.config(bg=row_bg)
+            for widget in row_frame.winfo_children():
+                if isinstance(widget, (tk.Label, tk.Frame)) and widget != edit_btn:
+                    widget.config(bg=row_bg)
+
+        row_frame.bind('<Enter>', on_enter)
+        row_frame.bind('<Leave>', on_leave)
+
+        # Serial number (width=4 chars)
         sr_label = tk.Label(row_frame, text=str(sr_no),
                            font=FONTS['body'],
-                           bg=self.colors['background'],
+                           bg=row_bg,
                            fg=self.colors['text_primary'],
-                           width=60,
+                           width=4,
                            anchor='w',
                            padx=SPACING['md'])
         sr_label.pack(side=tk.LEFT, padx=SPACING['sm'])
+        sr_label.bind('<Enter>', on_enter)
+        sr_label.bind('<Leave>', on_leave)
 
-        # Company code
-        code_label = tk.Label(row_frame, text=company['company_code'],
-                             font=FONTS['body'],
-                             bg=self.colors['background'],
-                             fg=self.colors['text_primary'],
-                             width=180,
-                             anchor='w',
-                             padx=SPACING['md'])
-        code_label.pack(side=tk.LEFT, padx=SPACING['sm'])
-
-        # Company name
+        # Company name (width=30 chars)
         name_label = tk.Label(row_frame, text=company['company_name'],
                              font=FONTS['body'],
-                             bg=self.colors['background'],
+                             bg=row_bg,
                              fg=self.colors['text_primary'],
-                             width=300,
+                             width=30,
                              anchor='w',
                              padx=SPACING['md'])
         name_label.pack(side=tk.LEFT, padx=SPACING['sm'])
+        name_label.bind('<Enter>', on_enter)
+        name_label.bind('<Leave>', on_leave)
 
-        # Status
-        status_frame = tk.Frame(row_frame, bg=self.colors['background'], width=140)
-        status_frame.pack(side=tk.LEFT, padx=SPACING['md'])
+        # Company code (width=12 chars)
+        code_label = tk.Label(row_frame, text=company['company_code'],
+                             font=FONTS['body'],
+                             bg=row_bg,
+                             fg=self.colors['text_primary'],
+                             width=12,
+                             anchor='w',
+                             padx=SPACING['md'])
+        code_label.pack(side=tk.LEFT, padx=SPACING['sm'])
+        code_label.bind('<Enter>', on_enter)
+        code_label.bind('<Leave>', on_leave)
 
+        # Status (width=8 chars)
         status_color = self.colors['success'] if company['status'] == 'Active' else self.colors['error']
-        status_label = tk.Label(status_frame,
+        status_label = tk.Label(row_frame,
                                text=company['status'],
                                font=FONTS['body_bold'],
-                               bg=self.colors['background'],
-                               fg=status_color)
-        status_label.pack()
+                               bg=row_bg,
+                               fg=status_color,
+                               width=8,
+                               anchor='w',
+                               padx=SPACING['md'])
+        status_label.pack(side=tk.LEFT, padx=SPACING['sm'])
+        status_label.bind('<Enter>', on_enter)
+        status_label.bind('<Leave>', on_leave)
 
-        # Action button (better contrast and size)
-        action_frame = tk.Frame(row_frame, bg=self.colors['background'], width=180)
-        action_frame.pack(side=tk.LEFT, padx=SPACING['md'])
-
-        edit_btn = tk.Button(action_frame,
+        # Edit button (width=6)
+        edit_btn = tk.Button(row_frame,
                             text="Edit",
                             font=FONTS['small_bold'],
-                            bg=self.colors['surface'],
-                            fg=self.colors['text_primary'],
-                            activebackground=self.colors['border'],
-                            activeforeground=self.colors['text_primary'],
+                            bg=self.colors['primary'],
+                            fg='white',
+                            activebackground=self.colors['primary_hover'],
+                            activeforeground='white',
                             cursor='hand2',
                             relief=tk.FLAT,
-                            padx=SPACING['md'],
-                            pady=SPACING['sm'],
+                            width=6,
+                            padx=SPACING['sm'],
+                            pady=SPACING['xs'],
                             command=lambda: self.show_edit_form(company['id']))
-        edit_btn.pack()
+        edit_btn.pack(side=tk.LEFT, padx=SPACING['md'])
+
+        # Hover effect for edit button
+        def on_btn_enter(e):
+            edit_btn.config(bg=self.colors['primary_hover'])
+        def on_btn_leave(e):
+            edit_btn.config(bg=self.colors['primary'])
+
+        edit_btn.bind('<Enter>', on_btn_enter)
+        edit_btn.bind('<Leave>', on_btn_leave)
 
     def show_create_form(self):
         """Show the create company form"""

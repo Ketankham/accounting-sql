@@ -15,7 +15,8 @@ DB_CONFIG = {
 # SQLite database path for financial years
 # Using absolute path to ensure we always connect to the same database
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, 'financial_data.db')
-
+DB_PATH = os.path.abspath(
+    os.path.join(BASE_DIR, "..", "tkinter_mysql_project", "financial_data.db")
+)
 # Print the absolute path for debugging
 print(f"[CONFIG] SQLite DB Path configured as: {os.path.abspath(DB_PATH)}")

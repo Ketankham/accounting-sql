@@ -1,17 +1,17 @@
 """
-Company Form - Create and Edit Company
+Company Form - Create and Edit Company (Scrollable with Canvas Width Binding)
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import os
-from ui_config import COLORS, FONTS, SPACING, LAYOUT, INPUT_STYLES
+from ui_config import COLORS, FONTS, SPACING, LAYOUT
 
 
 class CompanyForm(tk.Frame):
     def __init__(self, parent, colors, company_handler, company_data, on_save, on_cancel):
         super().__init__(parent, bg=COLORS['background'])
-        self.colors = COLORS  # Use unified colors
+        self.colors = COLORS
         self.company_handler = company_handler
         self.company_data = company_data
         self.on_save_callback = on_save
@@ -30,120 +30,128 @@ class CompanyForm(tk.Frame):
             self.load_company_data()
 
     def create_widgets(self):
-        """Create the form UI"""
-        # Scrollable form container
-        canvas = tk.Canvas(self, bg=self.colors['background'], highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        """Create the form UI with scrollable canvas"""
+        # Main container with canvas for scrolling
+        main_container = tk.Frame(self, bg=self.colors['background'])
+        main_container.pack(fill=tk.BOTH, expand=True)
 
-        form_container = tk.Frame(canvas, bg=self.colors['background'])
+        # Create canvas and scrollbar for scrollable form
+        canvas = tk.Canvas(main_container, bg=self.colors['background'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(main_container, orient="vertical", command=canvas.yview)
 
-        form_container.bind(
+        # Scrollable frame inside canvas
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['background'])
+
+        scrollable_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=form_container, anchor="nw")
+        # CRITICAL FIX: Create canvas window with width binding (same fix as table view)
+        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Bind canvas width to scrollable_frame width
+        def on_canvas_configure(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        canvas.bind("<Configure>", on_canvas_configure)
+
         canvas.configure(yscrollcommand=scrollbar.set)
 
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Enable mousewheel scrolling
+        # Mousewheel scrolling
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
+        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
 
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # Form content inside scrollable frame
+        form_container = tk.Frame(scrollable_frame, bg=self.colors['background'])
+        form_container.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxl'], pady=SPACING['xl'])
 
-        # Form content
-        self.create_form_content(form_container)
-
-    def create_form_content(self, parent):
-        """Create form fields - all stacked vertically in single column"""
-        # Form frame with padding
-        form_frame = tk.Frame(parent, bg=self.colors['background'])
-        form_frame.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxl'], pady=SPACING['xl'])
-
-        # Single column layout - all fields stacked vertically
-        form_frame.grid_columnconfigure(0, weight=1)
+        # Single column layout
+        form_container.grid_columnconfigure(0, weight=1)
 
         current_row = 0
 
-        # --- Company Code ---
-        self.create_field(form_frame, "Company Code", "company_code",
-                         placeholder="e.g., COMP-001", required=True, row=current_row)
+        # --- Company Code (*) ---
+        self.create_field(form_container, "Company Code", "company_code",
+                         placeholder="e.g., COMP001", required=True, row=current_row, max_length=20)
         current_row += 2
 
-        # --- Company Name ---
-        self.create_field(form_frame, "Company Name", "company_name",
+        # --- Company Name (*) ---
+        self.create_field(form_container, "Company Name", "company_name",
                          placeholder="Enter company name", required=True, row=current_row)
         current_row += 2
 
-        # --- GST Number ---
-        self.create_field(form_frame, "GST Number", "gst_number",
-                         placeholder="Enter GST number", row=current_row)
+        # --- Bill To Address (*) ---
+        self.create_textarea(form_container, "Bill To Address", "bill_to_address",
+                            placeholder="Enter billing address", required=True, row=current_row)
         current_row += 2
 
-        # --- PAN Number ---
-        self.create_field(form_frame, "PAN Number", "pan_number",
-                         placeholder="Enter PAN number", row=current_row)
+        # --- Ship To Address (*) ---
+        self.create_textarea(form_container, "Ship To Address", "ship_to_address",
+                            placeholder="Enter shipping address", required=True, row=current_row)
         current_row += 2
 
-        # --- Bill To Address ---
-        self.create_textarea(form_frame, "Bill To Address", "bill_to_address",
-                            placeholder="Enter billing address", row=current_row)
+        # --- State (*) ---
+        self.create_dropdown(form_container, "State", "state",
+                            self.company_handler.get_states(), required=True, row=current_row)
         current_row += 2
 
-        # --- Ship To Address ---
-        self.create_textarea(form_frame, "Ship To Address", "ship_to_address",
-                            placeholder="Enter shipping address", row=current_row)
+        # --- City (*) ---
+        self.create_field(form_container, "City", "city",
+                         placeholder="Enter city", required=True, row=current_row)
         current_row += 2
 
-        # --- State ---
-        self.create_dropdown(form_frame, "State", "state",
-                            self.company_handler.get_states(), row=current_row)
+        # --- GST Number (*) ---
+        self.create_field(form_container, "GST Number", "gst_number",
+                         placeholder="e.g., 22AAAAA0000A1Z5", required=True, row=current_row, max_length=15)
         current_row += 2
 
-        # --- City ---
-        self.create_field(form_frame, "City", "city",
-                         placeholder="Enter city", row=current_row)
+        # --- PAN Number (*) ---
+        self.create_field(form_container, "PAN Number", "pan_number",
+                         placeholder="e.g., AAAAA0000A", required=True, row=current_row, max_length=10)
         current_row += 2
 
-        # --- Landline Number ---
-        self.create_field(form_frame, "Landline Number", "landline_number",
-                         placeholder="Enter landline number", row=current_row)
+        # --- Landline Number (Optional) ---
+        self.create_field(form_container, "Landline Number", "landline_number",
+                         placeholder="e.g., 022-12345678", row=current_row)
         current_row += 2
 
-        # --- Mobile Number ---
-        self.create_field(form_frame, "Mobile Number", "mobile_number",
-                         placeholder="Enter mobile number", row=current_row)
+        # --- Mobile Number (Optional) ---
+        self.create_field(form_container, "Mobile Number", "mobile_number",
+                         placeholder="e.g., +91 9876543210", row=current_row)
         current_row += 2
 
-        # --- Email Address ---
-        self.create_field(form_frame, "Email Address", "email_address",
-                         placeholder="Enter email address", row=current_row)
+        # --- Email Address (Optional) ---
+        self.create_field(form_container, "Email Address", "email_address",
+                         placeholder="e.g., info@company.com", row=current_row)
         current_row += 2
 
-        # --- Website ---
-        self.create_field(form_frame, "Website", "website",
-                         placeholder="Enter website URL", row=current_row)
+        # --- Website (Optional) ---
+        self.create_field(form_container, "Website", "website",
+                         placeholder="e.g., www.company.com", row=current_row)
         current_row += 2
 
-        # --- Logo Upload ---
-        self.create_file_upload(form_frame, "Attach Logo", "logo_path", row=current_row)
+        # --- Logo Path (*) ---
+        self.create_file_upload(form_container, "Company Logo", "logo_path",
+                               required=True, row=current_row)
         current_row += 2
 
-        # --- Status ---
-        self.create_dropdown(form_frame, "Status", "status",
-                            ["Active", "Inactive"], row=current_row)
+        # --- Status (*) ---
+        self.create_dropdown(form_container, "Status", "status",
+                            ["Active", "Inactive"], required=True, row=current_row)
         current_row += 2
 
-        # --- BUTTONS ---
-        button_frame = tk.Frame(parent, bg=self.colors['background'])
+        # --- BUTTONS (inside scrollable area) ---
+        button_frame = tk.Frame(scrollable_frame, bg=self.colors['background'])
         button_frame.pack(fill=tk.X, padx=SPACING['xxl'], pady=(SPACING['lg'], SPACING['xl']))
 
-        # Save button
+        # Save button (left side)
         save_btn = tk.Button(button_frame,
-                            text="Save")
+                            text="Create Company" if not self.is_edit_mode else "Update Company")
         save_btn.config(
             font=FONTS['button'],
             bg=self.colors['primary'],
@@ -162,10 +170,10 @@ class CompanyForm(tk.Frame):
         save_btn.bind('<Enter>', lambda e: save_btn.config(bg=self.colors['primary_hover']))
         save_btn.bind('<Leave>', lambda e: save_btn.config(bg=self.colors['primary']))
 
-        # Cancel button
-        cancel_btn = tk.Button(button_frame,
-                              text="Cancel")
-        cancel_btn.config(
+        # Back button (right side)
+        back_btn = tk.Button(button_frame,
+                            text="Back")
+        back_btn.config(
             font=FONTS['button'],
             bg=self.colors['surface'],
             fg=self.colors['text_primary'],
@@ -177,20 +185,10 @@ class CompanyForm(tk.Frame):
             pady=SPACING['md'],
             command=self.handle_cancel
         )
-        cancel_btn.pack(side=tk.LEFT, padx=(0, SPACING['md']))
+        back_btn.pack(side=tk.RIGHT)
 
-        # Back to Main Menu link
-        back_link = tk.Label(button_frame,
-                            text="Back to Main Menu",
-                            font=FONTS['body'],
-                            fg=self.colors['primary'],
-                            bg=self.colors['background'],
-                            cursor='hand2')
-        back_link.pack(side=tk.RIGHT)
-        back_link.bind('<Button-1>', lambda e: self.handle_cancel())
-
-    def create_field(self, parent, label_text, field_name, placeholder="", required=False, row=0):
-        """Create a text input field - stacked vertically"""
+    def create_field(self, parent, label_text, field_name, placeholder="", required=False, row=0, max_length=None):
+        """Create a text input field"""
         # Label
         label = tk.Label(parent,
                         text=label_text + (" *" if required else ""),
@@ -200,71 +198,78 @@ class CompanyForm(tk.Frame):
                         anchor='w')
         label.grid(row=row, column=0, sticky=tk.W, pady=(0, SPACING['sm']))
 
-        # Entry (with equal width)
-        entry = ttk.Entry(parent, font=FONTS['body'])
-        entry.grid(row=row+1, column=0, sticky=tk.EW, ipady=SPACING['md'], pady=(0, SPACING['lg']))
+        # Entry
+        var = tk.StringVar()
+        entry = tk.Entry(parent,
+                        textvariable=var,
+                        font=FONTS['body'],
+                        relief=tk.SOLID,
+                        borderwidth=1)
+        entry.grid(row=row+1, column=0, sticky=tk.EW, ipady=SPACING['sm'], pady=(0, SPACING['lg']))
 
-        # Placeholder
+        # Placeholder behavior
         if placeholder:
-            entry.insert(0, placeholder)
-            entry.config(foreground='gray')
+            var.set(placeholder)
+            entry.config(fg=self.colors['text_tertiary'])
 
             def on_focus_in(event):
-                if entry.get() == placeholder:
-                    entry.delete(0, tk.END)
-                    entry.config(foreground='black')
+                if var.get() == placeholder:
+                    var.set('')
+                    entry.config(fg=self.colors['text_primary'])
 
             def on_focus_out(event):
-                if not entry.get():
-                    entry.insert(0, placeholder)
-                    entry.config(foreground='gray')
+                if not var.get():
+                    var.set(placeholder)
+                    entry.config(fg=self.colors['text_tertiary'])
 
             entry.bind('<FocusIn>', on_focus_in)
             entry.bind('<FocusOut>', on_focus_out)
 
         # Store reference
         self.form_vars[field_name] = {
+            'var': var,
             'widget': entry,
             'type': 'entry',
+            'placeholder': placeholder,
             'required': required
         }
 
-    def create_textarea(self, parent, label_text, field_name, placeholder="", row=0):
-        """Create a multiline text area - stacked vertically"""
+    def create_textarea(self, parent, label_text, field_name, placeholder="", required=False, row=0):
+        """Create a multiline text area"""
         # Label
         label = tk.Label(parent,
-                        text=label_text,
+                        text=label_text + (" *" if required else ""),
                         font=FONTS['body_bold'],
                         bg=self.colors['background'],
                         fg=self.colors['text_primary'],
                         anchor='w')
         label.grid(row=row, column=0, sticky=tk.W, pady=(0, SPACING['sm']))
 
-        # Text widget (with equal width)
+        # Text widget
         text_widget = tk.Text(parent,
                              font=FONTS['body'],
-                             height=4,
+                             height=3,
                              wrap=tk.WORD,
                              relief=tk.SOLID,
-                             borderwidth=2,
+                             borderwidth=1,
                              padx=SPACING['sm'],
                              pady=SPACING['sm'])
         text_widget.grid(row=row+1, column=0, sticky=tk.EW, pady=(0, SPACING['lg']))
 
-        # Placeholder
+        # Placeholder behavior
         if placeholder:
             text_widget.insert('1.0', placeholder)
-            text_widget.config(foreground='gray')
+            text_widget.config(fg=self.colors['text_tertiary'])
 
             def on_focus_in(event):
                 if text_widget.get('1.0', tk.END).strip() == placeholder:
                     text_widget.delete('1.0', tk.END)
-                    text_widget.config(foreground='black')
+                    text_widget.config(fg=self.colors['text_primary'])
 
             def on_focus_out(event):
                 if not text_widget.get('1.0', tk.END).strip():
                     text_widget.insert('1.0', placeholder)
-                    text_widget.config(foreground='gray')
+                    text_widget.config(fg=self.colors['text_tertiary'])
 
             text_widget.bind('<FocusIn>', on_focus_in)
             text_widget.bind('<FocusOut>', on_focus_out)
@@ -272,64 +277,74 @@ class CompanyForm(tk.Frame):
         # Store reference
         self.form_vars[field_name] = {
             'widget': text_widget,
-            'type': 'text'
+            'type': 'text',
+            'placeholder': placeholder,
+            'required': required
         }
 
-    def create_dropdown(self, parent, label_text, field_name, values, row=0):
-        """Create a dropdown field - stacked vertically"""
+    def create_dropdown(self, parent, label_text, field_name, values, required=False, row=0):
+        """Create a dropdown field"""
         # Label
         label = tk.Label(parent,
-                        text=label_text,
+                        text=label_text + (" *" if required else ""),
                         font=FONTS['body_bold'],
                         bg=self.colors['background'],
                         fg=self.colors['text_primary'],
                         anchor='w')
         label.grid(row=row, column=0, sticky=tk.W, pady=(0, SPACING['sm']))
 
-        # Combobox (with equal width)
+        # Combobox
+        var = tk.StringVar()
         combo = ttk.Combobox(parent,
+                            textvariable=var,
                             font=FONTS['body'],
-                            state="readonly" if values else "normal",
+                            state="readonly",
                             values=values)
-        combo.grid(row=row+1, column=0, sticky=tk.EW, ipady=SPACING['md'], pady=(0, SPACING['lg']))
+        combo.grid(row=row+1, column=0, sticky=tk.EW, ipady=SPACING['sm'], pady=(0, SPACING['lg']))
 
-        if values:
-            if field_name == 'status':
-                combo.set('Active')
-            else:
-                combo.set(f"Select {label_text}")
+        # Set default value
+        if field_name == 'status':
+            var.set('Active')
+        else:
+            var.set(f"Select {label_text}")
 
         # Store reference
         self.form_vars[field_name] = {
+            'var': var,
             'widget': combo,
-            'type': 'combobox'
+            'type': 'dropdown',
+            'placeholder': f"Select {label_text}",
+            'required': required
         }
 
-    def create_file_upload(self, parent, label_text, field_name, row=0):
-        """Create a file upload field - stacked vertically"""
+    def create_file_upload(self, parent, label_text, field_name, required=False, row=0):
+        """Create a file upload field"""
         # Label
         label = tk.Label(parent,
-                        text=label_text,
+                        text=label_text + (" *" if required else ""),
                         font=FONTS['body_bold'],
                         bg=self.colors['background'],
                         fg=self.colors['text_primary'],
                         anchor='w')
         label.grid(row=row, column=0, sticky=tk.W, pady=(0, SPACING['sm']))
 
-        # Upload frame (with equal width)
-        upload_frame = tk.Frame(parent, bg=self.colors['background'], relief=tk.SOLID, borderwidth=2)
-        upload_frame.grid(row=row+1, column=0, sticky=tk.EW, ipady=SPACING['md'], pady=(0, SPACING['lg']))
+        # Upload frame
+        upload_frame = tk.Frame(parent, bg=self.colors['surface'], relief=tk.SOLID, borderwidth=1)
+        upload_frame.grid(row=row+1, column=0, sticky=tk.EW, pady=(0, SPACING['lg']))
         upload_frame.grid_columnconfigure(0, weight=1)
 
-        # File path label
+        # File path variable
         path_var = tk.StringVar(value="No file selected")
+
+        # File path label
         path_label = tk.Label(upload_frame,
                              textvariable=path_var,
                              font=FONTS['body'],
-                             bg=self.colors['background'],
+                             bg=self.colors['surface'],
                              fg=self.colors['text_tertiary'],
                              anchor='w',
-                             padx=SPACING['md'])
+                             padx=SPACING['md'],
+                             pady=SPACING['sm'])
         path_label.grid(row=0, column=0, sticky=tk.EW)
 
         # Browse button
@@ -339,30 +354,31 @@ class CompanyForm(tk.Frame):
                 filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif"), ("All files", "*.*")]
             )
             if filename:
-                path_var.set(os.path.basename(filename))
+                path_var.set(filename)
                 path_label.config(fg=self.colors['text_primary'])
 
         browse_btn = tk.Button(upload_frame,
-                              text="Attach Logo")
+                              text="Browse")
         browse_btn.config(
             font=FONTS['small_bold'],
-            bg=self.colors['surface'],
-            fg=self.colors['text_primary'],
-            activebackground=self.colors['border'],
-            activeforeground=self.colors['text_primary'],
+            bg=self.colors['primary'],
+            fg='white',
+            activebackground=self.colors['primary_hover'],
+            activeforeground='white',
             cursor='hand2',
             relief=tk.FLAT,
             padx=SPACING['md'],
             pady=SPACING['sm'],
             command=browse_file
         )
-        browse_btn.grid(row=0, column=1, padx=SPACING['sm'])
+        browse_btn.grid(row=0, column=1, padx=SPACING['sm'], pady=SPACING['sm'])
 
         # Store reference
         self.form_vars[field_name] = {
-            'widget': path_var,
+            'var': path_var,
+            'widget': path_label,
             'type': 'file',
-            'path_label': path_label
+            'required': required
         }
 
     def load_company_data(self):
@@ -371,106 +387,119 @@ class CompanyForm(tk.Frame):
             return
 
         for field_name, field_info in self.form_vars.items():
-            widget = field_info['widget']
-            field_type = field_info['type']
             value = self.company_data.get(field_name, '')
 
             if value is None:
                 value = ''
 
-            if field_type == 'entry':
-                # Clear placeholder first
-                if widget.get() and widget.cget('foreground') == 'gray':
-                    widget.delete(0, tk.END)
-                    widget.config(foreground='black')
-                widget.delete(0, tk.END)
-                widget.insert(0, str(value))
+            if field_info['type'] == 'entry':
+                # Entry field
+                field_info['var'].set(value)
+                # Only set fg color for tk.Entry, NOT for ttk.Combobox
+                if isinstance(field_info['widget'], tk.Entry):
+                    field_info['widget'].config(fg=self.colors['text_primary'])
 
-            elif field_type == 'text':
-                # Clear placeholder first
-                current_text = widget.get('1.0', tk.END).strip()
-                if current_text and widget.cget('foreground') == 'gray':
-                    widget.delete('1.0', tk.END)
-                    widget.config(foreground='black')
+            elif field_info['type'] == 'text':
+                # Text area
+                widget = field_info['widget']
                 widget.delete('1.0', tk.END)
-                widget.insert('1.0', str(value))
+                widget.insert('1.0', value)
+                widget.config(fg=self.colors['text_primary'])
 
-            elif field_type == 'combobox':
-                widget.set(str(value))
+            elif field_info['type'] == 'dropdown':
+                # Dropdown
+                field_info['var'].set(value if value else field_info.get('placeholder', ''))
 
-            elif field_type == 'file':
+            elif field_info['type'] == 'file':
+                # File upload
                 if value:
-                    widget.set(value)
-                    field_info['path_label'].config(foreground='black')
+                    field_info['var'].set(value)
+                    field_info['widget'].config(fg=self.colors['text_primary'])
+
+    def validate_form(self):
+        """Validate form data"""
+        errors = []
+
+        for field_name, field_info in self.form_vars.items():
+            if field_info.get('required'):
+                if field_info['type'] == 'entry':
+                    value = field_info['var'].get()
+                    placeholder = field_info.get('placeholder', '')
+                    if not value or value == placeholder:
+                        label_text = field_name.replace('_', ' ').title()
+                        errors.append(f"{label_text} is required")
+
+                elif field_info['type'] == 'text':
+                    value = field_info['widget'].get('1.0', tk.END).strip()
+                    placeholder = field_info.get('placeholder', '')
+                    if not value or value == placeholder:
+                        label_text = field_name.replace('_', ' ').title()
+                        errors.append(f"{label_text} is required")
+
+                elif field_info['type'] == 'dropdown':
+                    value = field_info['var'].get()
+                    placeholder = field_info.get('placeholder', '')
+                    if not value or value == placeholder or value.startswith('Select'):
+                        label_text = field_name.replace('_', ' ').title()
+                        errors.append(f"{label_text} is required")
+
+                elif field_info['type'] == 'file':
+                    value = field_info['var'].get()
+                    if not value or value == "No file selected":
+                        label_text = field_name.replace('_', ' ').title()
+                        errors.append(f"{label_text} is required")
+
+        if errors:
+            messagebox.showerror("Validation Error", "\n".join(errors))
+            return False
+
+        return True
 
     def get_form_data(self):
         """Get all form data"""
         data = {}
 
         for field_name, field_info in self.form_vars.items():
-            widget = field_info['widget']
-            field_type = field_info['type']
+            if field_info['type'] == 'entry':
+                value = field_info['var'].get()
+                placeholder = field_info.get('placeholder', '')
+                data[field_name] = value if value != placeholder else ''
 
-            if field_type == 'entry':
-                value = widget.get()
-                # Check if it's a placeholder
-                if widget.cget('foreground') == 'gray':
-                    value = ''
-                data[field_name] = value.strip()
+            elif field_info['type'] == 'text':
+                value = field_info['widget'].get('1.0', tk.END).strip()
+                placeholder = field_info.get('placeholder', '')
+                data[field_name] = value if value != placeholder else ''
 
-            elif field_type == 'text':
-                value = widget.get('1.0', tk.END)
-                # Check if it's a placeholder
-                if widget.cget('foreground') == 'gray':
-                    value = ''
-                data[field_name] = value.strip()
+            elif field_info['type'] == 'dropdown':
+                value = field_info['var'].get()
+                placeholder = field_info.get('placeholder', '')
+                if value and not value.startswith('Select'):
+                    data[field_name] = value
+                else:
+                    data[field_name] = ''
 
-            elif field_type == 'combobox':
-                value = widget.get()
-                # Check if it's a placeholder
-                if value.startswith("Select"):
-                    value = ''
-                data[field_name] = value.strip()
-
-            elif field_type == 'file':
-                value = widget.get()
-                if value == "No file selected":
-                    value = ''
-                data[field_name] = value
+            elif field_info['type'] == 'file':
+                value = field_info['var'].get()
+                data[field_name] = value if value != "No file selected" else ''
 
         return data
 
-    def validate_form(self, data):
-        """Validate form data"""
-        # Check required fields
-        if not data.get('company_code'):
-            messagebox.showerror("Validation Error", "Company Code is required")
-            return False
-
-        if not data.get('company_name'):
-            messagebox.showerror("Validation Error", "Company Name is required")
-            return False
-
-        return True
-
     def handle_save(self):
         """Handle save button click"""
+        # Validate form
+        if not self.validate_form():
+            return
+
         # Get form data
         data = self.get_form_data()
 
-        # Validate
-        if not self.validate_form(data):
-            return
-
         # Save to database
         if self.is_edit_mode:
-            # Update existing company
             success, message = self.company_handler.update_company(
                 self.company_data['id'],
                 data
             )
         else:
-            # Create new company
             success, message, company_id = self.company_handler.create_company(data)
 
         if success:
@@ -480,8 +509,5 @@ class CompanyForm(tk.Frame):
             messagebox.showerror("Error", message)
 
     def handle_cancel(self):
-        """Handle cancel button click"""
-        result = messagebox.askyesno("Confirm",
-                                     "Are you sure you want to cancel? Any unsaved changes will be lost.")
-        if result:
-            self.on_cancel_callback()
+        """Handle cancel/back button click"""
+        self.on_cancel_callback()
