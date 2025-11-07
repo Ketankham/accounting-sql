@@ -59,23 +59,24 @@ SPACING = {
 # We’ll use “bold” sparingly and default to “normal” for most text
 
 FONTS = {
-    'display': ('Segoe UI', 24, 'bold'),
-    'h1': ('Segoe UI', 20, 'bold'),
-    'h2': ('Segoe UI', 16, 'bold'),
-    'h3': ('Segoe UI', 14, 'bold'),
+    'display': ('Segoe UI', 22, 'bold'),
+    'h1': ('Segoe UI', 18, 'bold'),
+    'h2': ('Segoe UI', 14, 'bold'),
+    'h3': ('Segoe UI', 12, 'bold'),
 
-    'body': ('Segoe UI', 13, 'normal'),
-    'body_bold': ('Segoe UI', 13, 'bold'),
-    'body_large': ('Segoe UI', 15, 'normal'),
+    'body': ('Segoe UI', 11, 'normal'),
+    'body_bold': ('Segoe UI', 11, 'bold'),
+    'body_large': ('Segoe UI', 13, 'normal'),
 
-    'small': ('Segoe UI', 11, 'normal'),
-    'small_bold': ('Segoe UI', 11, 'bold'),
-    'caption': ('Segoe UI', 10, 'normal'),
+    'small': ('Segoe UI', 9, 'normal'),
+    'small_bold': ('Segoe UI', 9, 'bold'),
+    'small_italic': ('Segoe UI', 9, 'italic'),
+    'caption': ('Segoe UI', 8, 'normal'),
 
-    'button': ('Segoe UI', 13, 'bold'),
-    'button_large': ('Segoe UI', 14, 'bold'),
-    'menu': ('Segoe UI', 13, 'bold'),
-    'submenu': ('Segoe UI', 12, 'normal'),
+    'button': ('Segoe UI', 11, 'bold'),
+    'button_large': ('Segoe UI', 12, 'bold'),
+    'menu': ('Segoe UI', 11, 'bold'),
+    'submenu': ('Segoe UI', 10, 'normal'),
 }
 
 

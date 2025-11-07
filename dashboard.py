@@ -153,7 +153,18 @@ class Dashboard(tk.Tk):
             {
                 'name': 'Master Data',
                 'icon': '📁',
-                'submenus': []
+                'submenus': [
+                    'Account Group Master',
+                    'Account Master',
+                    'Business Partner',
+                    'Item Group Master',
+                    'Item Type Master',
+                    'Manufacturer Master',
+                    'Item Master',
+                    'UoM Master',
+                    'City Master',
+                    'State Master'
+                ]
             },
             {
                 'name': 'Utilities',
@@ -203,19 +214,67 @@ class Dashboard(tk.Tk):
                                   padx=SPACING['md'])
             arrow_label.pack(side=tk.RIGHT)
 
-        # Submenu container (initially hidden)
-        submenu_container = tk.Frame(menu_frame, bg=self.colors['sidebar'])
+        # Submenu container with scrollbar (initially hidden)
+        submenu_outer = tk.Frame(menu_frame, bg=self.colors['sidebar'])
+
+        # Create canvas for scrollable submenu
+        submenu_canvas = tk.Canvas(submenu_outer, bg=self.colors['sidebar'],
+                                   highlightthickness=0, bd=0)
+        submenu_scrollbar = ttk.Scrollbar(submenu_outer, orient="vertical",
+                                         command=submenu_canvas.yview)
+        submenu_container = tk.Frame(submenu_canvas, bg=self.colors['sidebar'])
+
+        submenu_canvas.configure(yscrollcommand=submenu_scrollbar.set)
+
+        # Create window in canvas - set width to sidebar width minus scrollbar
+        canvas_window = submenu_canvas.create_window((0, 0), window=submenu_container,
+                                                     anchor='nw', width=LAYOUT['sidebar_width']-30)
+
+        # Update scroll region when container size changes
+        def update_scroll_region(_event=None):
+            # Update the scroll region to match the container size
+            submenu_canvas.update_idletasks()
+            submenu_canvas.configure(scrollregion=submenu_canvas.bbox("all"))
+
+            # Get the actual height needed
+            items_height = submenu_container.winfo_reqheight()
+
+            # Limit max height to 250px to ensure scrollbar appears when needed
+            max_height = min(items_height, 250)
+            submenu_canvas.configure(height=max_height)
+
+        submenu_container.bind('<Configure>', update_scroll_region)
+
+        # Mouse wheel scrolling - only when hovering over submenu
+        def on_mousewheel(event):
+            if submenu_canvas.winfo_exists() and submenu_outer.winfo_ismapped():
+                submenu_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+        def bind_mousewheel_enter(_event):
+            submenu_canvas.bind_all("<MouseWheel>", on_mousewheel)
+
+        def unbind_mousewheel_leave(_event):
+            submenu_canvas.unbind_all("<MouseWheel>")
+
+        submenu_outer.bind("<Enter>", bind_mousewheel_enter)
+        submenu_outer.bind("<Leave>", unbind_mousewheel_leave)
 
         # Click handler
         def toggle_menu(event=None):
             if menu_data['submenus']:
                 # Toggle submenu
-                if submenu_container.winfo_ismapped():
-                    submenu_container.pack_forget()
+                if submenu_outer.winfo_ismapped():
+                    submenu_outer.pack_forget()
+                    unbind_mousewheel_leave(None)
                 else:
-                    submenu_container.pack(fill=tk.X, pady=(0, 5))
+                    # Pack canvas and scrollbar
+                    submenu_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+                    submenu_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+                    submenu_outer.pack(fill=tk.X, pady=(0, 5))
                     self.current_module = menu_data['name']
                     self.show_module_content(menu_data['name'])
+                    # Force update of scroll region after a short delay
+                    self.after(100, update_scroll_region)
             else:
                 # No submenu, just select module
                 self.current_module = menu_data['name']
@@ -314,6 +373,26 @@ class Dashboard(tk.Tk):
             self.show_companies_management()
         elif module_name == 'Utilities' and submenu_name == 'Financial Years':
             self.show_financial_years_management()
+        elif module_name == 'Master Data' and submenu_name == 'Account Group Master':
+            self.show_account_group_management()
+        elif module_name == 'Master Data' and submenu_name == 'Account Master':
+            self.show_account_master_management()
+        elif module_name == 'Master Data' and submenu_name == 'Business Partner':
+            self.show_business_partner_management()
+        elif module_name == 'Master Data' and submenu_name == 'Item Group Master':
+            self.show_item_group_management()
+        elif module_name == 'Master Data' and submenu_name == 'Item Type Master':
+            self.show_item_type_management()
+        elif module_name == 'Master Data' and submenu_name == 'Manufacturer Master':
+            self.show_item_company_management()
+        elif module_name == 'Master Data' and submenu_name == 'Item Master':
+            self.show_item_management()
+        elif module_name == 'Master Data' and submenu_name == 'UoM Master':
+            self.show_uom_management()
+        elif module_name == 'Master Data' and submenu_name == 'City Master':
+            self.show_city_management()
+        elif module_name == 'Master Data' and submenu_name == 'State Master':
+            self.show_state_management()
         else:
             # Default placeholder
             center_frame = tk.Frame(self.content_frame, bg=self.colors['background'])
@@ -357,6 +436,166 @@ class Dashboard(tk.Tk):
 
         except Exception as e:
             messagebox.showerror("Error", f"Could not load Financial Years module: {e}")
+
+    def show_account_group_management(self):
+        """Show account group management screen"""
+        try:
+            from account_group_management import AccountGroupManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create account group management widget
+            ag_mgmt = AccountGroupManagement(self.content_frame, self.colors)
+            ag_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load Account Group Master module: {e}")
+
+    def show_item_group_management(self):
+        """Show item group management screen"""
+        try:
+            from item_group_management import ItemGroupManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create item group management widget
+            ig_mgmt = ItemGroupManagement(self.content_frame, self.colors)
+            ig_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load Item Group Master module: {e}")
+
+    def show_item_type_management(self):
+        """Show item type management screen"""
+        try:
+            from item_type_management import ItemTypeManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create item type management widget
+            it_mgmt = ItemTypeManagement(self.content_frame, self.colors)
+            it_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load Item Type Master module: {e}")
+
+    def show_item_company_management(self):
+        """Show manufacturer management screen"""
+        try:
+            from item_company_management import ItemCompanyManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create manufacturer management widget
+            ic_mgmt = ItemCompanyManagement(self.content_frame, self.colors)
+            ic_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load Manufacturer Master module: {e}")
+
+    def show_city_management(self):
+        """Show city management screen"""
+        try:
+            from city_management import CityManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create city management widget
+            city_mgmt = CityManagement(self.content_frame, self.colors)
+            city_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load City Master module: {e}")
+
+    def show_state_management(self):
+        """Show state management screen"""
+        try:
+            from state_management import StateManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create state management widget
+            state_mgmt = StateManagement(self.content_frame, self.colors)
+            state_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load State Master module: {e}")
+
+    def show_uom_management(self):
+        """Show UoM (Unit of Measure) management screen"""
+        try:
+            from uom_management import UoMManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create UoM management widget
+            uom_mgmt = UoMManagement(self.content_frame, self.colors)
+            uom_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load UoM Master module: {e}")
+
+    def show_item_management(self):
+        """Show Item Master management screen"""
+        try:
+            from item_management import ItemManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create item management widget
+            item_mgmt = ItemManagement(self.content_frame, self.colors)
+            item_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load Item Master module: {e}")
+
+    def show_account_master_management(self):
+        """Show account master management screen"""
+        try:
+            from account_master_management import AccountMasterManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create account master management widget
+            am_mgmt = AccountMasterManagement(self.content_frame, self.colors)
+            am_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load Account Master module: {e}")
+
+    def show_business_partner_management(self):
+        """Show business partner management screen"""
+        try:
+            from business_partner_management import BusinessPartnerManagement
+
+            # Clear content
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+
+            # Create business partner management widget
+            bp_mgmt = BusinessPartnerManagement(self.content_frame, self.colors)
+            bp_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load Business Partner module: {e}")
 
     def create_footer(self):
         """Create footer"""

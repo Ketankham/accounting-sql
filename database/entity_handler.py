@@ -1,4 +1,4 @@
-mport mysql.connector
+import mysql.connector
 from mysql.connector import Error
 from database.config import DB_CONFIG
 

@@ -248,9 +248,9 @@ class LoginScreen(tk.Tk):
 
 if __name__ == "__main__":
     print("\n" + "="*50)
-    print("🚀 Starting Login Application")
+    print("[START] Starting Login Application")
     print("="*50)
-    print("\n📝 Test Credentials:")
+    print("\n[INFO] Test Credentials:")
     print("   Username: admin")
     print("   Password: password123")
     print("   Company: Tech Solutions Inc (optional)")
